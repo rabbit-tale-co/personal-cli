@@ -1324,15 +1324,15 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
             </div>
 
             <div className="relative p-3 md:p-0">
-              <div className="flex gap-2 md:block">
+              <div className="flex gap-2 md:block w-full">
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="command-input flex-1 md:w-full p-3 md:p-1 text-base md:text-sm bg-transparent border border-gray-600 md:border-none rounded-lg md:rounded-none focus:outline-none focus:border-cyan-500 md:focus:border-transparent"
-                  placeholder="Type a command... (try 'help')"
+                  className="command-input flex-1 md:w-full p-2 md:p-1 text-sm md:text-sm bg-transparent border border-gray-600 md:border-none rounded-lg md:rounded-none focus:outline-none focus:border-cyan-500 md:focus:border-transparent"
+                  placeholder="Type command..."
                   spellCheck={false}
                   autoComplete="off"
                   disabled={isTyping}
@@ -1340,7 +1340,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
                 <button
                   onClick={() => handleCommand(input)}
                   disabled={isTyping || !input.trim()}
-                  className="md:hidden px-3 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-mono text-xs transition-colors flex-shrink-0"
+                  className="md:hidden w-12 h-10 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-mono text-sm transition-colors flex-shrink-0 flex items-center justify-center ml-auto"
                 >
                   →
                 </button>
