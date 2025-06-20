@@ -3,12 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface TerminalLine {
   type: 'command' | 'output' | 'error' | 'system' | 'image' | 'link';
@@ -44,6 +38,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
   const [selectedSuggestion, setSelectedSuggestion] = useState(-1);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
   const router = useRouter();
 
   const username = 'visitor';
@@ -115,8 +110,9 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     setInput(value);
     const newSuggestions = getSuggestions(value);
     setSuggestions(newSuggestions);
-    setShowSuggestions(newSuggestions.length > 0 && value.trim().length > 0);
-    setSelectedSuggestion(newSuggestions.length > 0 ? 0 : -1);
+    const shouldShow = newSuggestions.length > 0 && value.trim().length > 0;
+    setShowSuggestions(shouldShow);
+    setSelectedSuggestion(shouldShow ? 0 : -1);
   };
 
   // Function to colorize text based on content
@@ -817,6 +813,13 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     localStorage.setItem('portfolio-history', JSON.stringify(newHistory));
   };
 
+  // Component cleanup
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Load command history from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('portfolio-history');
@@ -848,6 +851,8 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
       setIsTyping(true);
 
       setTimeout(() => {
+        if (!isMountedRef.current) return;
+
         const outputLines = filteredProjects.map((line: string, index: number) => ({
           type: 'output' as const,
           content: line,
@@ -859,7 +864,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
         // Restore focus after command execution
         setTimeout(() => {
-          if (inputRef.current) {
+          if (isMountedRef.current && inputRef.current) {
             inputRef.current.focus();
           }
         }, 50);
@@ -940,6 +945,8 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
       setCurrentRoute(command === 'home' ? null : command);
 
       setTimeout(() => {
+        if (!isMountedRef.current) return;
+
         const output = routes[command as keyof typeof routes]();
         if (output) {
           const outputLines = output.map((line, index) => ({
@@ -956,7 +963,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
         // Restore focus after command execution
         setTimeout(() => {
-          if (inputRef.current) {
+          if (isMountedRef.current && inputRef.current) {
             inputRef.current.focus();
           }
         }, 50);
@@ -964,6 +971,8 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     } else {
       // Unknown command
       setTimeout(() => {
+        if (!isMountedRef.current) return;
+
         setHistory([
           ...newHistory,
           {
@@ -977,7 +986,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
         // Restore focus after error
         setTimeout(() => {
-          if (inputRef.current) {
+          if (isMountedRef.current && inputRef.current) {
             inputRef.current.focus();
           }
         }, 50);
@@ -1011,7 +1020,12 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
       setShowSuggestions(false);
       setSelectedSuggestion(-1);
     } else if (e.key === 'ArrowUp') {
-      if (!showSuggestions) {
+      if (showSuggestions) {
+        e.preventDefault();
+        setSelectedSuggestion(prev =>
+          prev <= 0 ? suggestions.length - 1 : prev - 1
+        );
+      } else {
         e.preventDefault();
         if (commandHistory.length > 0) {
           const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
@@ -1020,7 +1034,12 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
         }
       }
     } else if (e.key === 'ArrowDown') {
-      if (!showSuggestions) {
+      if (showSuggestions) {
+        e.preventDefault();
+        setSelectedSuggestion(prev =>
+          prev >= suggestions.length - 1 ? 0 : prev + 1
+        );
+      } else {
         e.preventDefault();
         if (historyIndex > 0) {
           const newIndex = historyIndex - 1;
@@ -1055,7 +1074,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
   useEffect(() => {
     // Always focus input when component mounts or route changes
     const focusInput = () => {
-      if (inputRef.current) {
+      if (isMountedRef.current && inputRef.current) {
         inputRef.current.focus();
       }
     };
@@ -1064,37 +1083,49 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     focusInput();
 
     // Also focus after a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(focusInput, 100);
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) {
+        focusInput();
+      }
+    }, 100);
 
     // Show content based on route
-    if (initialRoute && routes[initialRoute as keyof typeof routes]) {
-      const output = routes[initialRoute as keyof typeof routes]();
-      const contentHistory = output?.map((line, index) => ({
-        type: 'output' as const,
-        content: line,
-        timestamp: new Date().toLocaleTimeString(),
-        id: `content-${initialRoute}-${index}`
-      }));
-      setHistory(contentHistory || []);
-    } else {
-      // Show welcome banner on home page
-      const welcomeOutput = routes.home();
-      const welcomeHistory = welcomeOutput.map((line, index) => ({
-        type: 'output' as const,
-        content: line,
-        timestamp: new Date().toLocaleTimeString(),
-        id: `welcome-${index}`
-      }));
-      setHistory(welcomeHistory);
+    if (isMountedRef.current) {
+      if (initialRoute && routes[initialRoute as keyof typeof routes]) {
+        const output = routes[initialRoute as keyof typeof routes]();
+        const contentHistory = output?.map((line, index) => ({
+          type: 'output' as const,
+          content: line,
+          timestamp: new Date().toLocaleTimeString(),
+          id: `content-${initialRoute}-${index}`
+        }));
+        if (isMountedRef.current) {
+          setHistory(contentHistory || []);
+        }
+      } else {
+        // Show welcome banner on home page
+        const welcomeOutput = routes.home();
+        const welcomeHistory = welcomeOutput.map((line, index) => ({
+          type: 'output' as const,
+          content: line,
+          timestamp: new Date().toLocaleTimeString(),
+          id: `welcome-${index}`
+        }));
+        if (isMountedRef.current) {
+          setHistory(welcomeHistory);
+        }
+      }
     }
 
-    return () => clearTimeout(timeoutId);
-  }, [initialRoute, routes]);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [initialRoute]);
 
   // Additional focus effect for route changes
   useEffect(() => {
     const focusInput = () => {
-      if (inputRef.current) {
+      if (isMountedRef.current && inputRef.current) {
         inputRef.current.focus();
       }
     };
@@ -1114,15 +1145,19 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
   // Mobile keyboard handling
   useEffect(() => {
     const handleResize = () => {
-      if (inputRef.current) {
+      if (isMountedRef.current && inputRef.current) {
         setTimeout(() => {
-          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          if (isMountedRef.current && inputRef.current) {
+            inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
         }, 100);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Global focus handler
@@ -1135,14 +1170,14 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
         return;
       }
 
-      if (inputRef.current && !isTyping) {
+      if (isMountedRef.current && inputRef.current && !isTyping) {
         inputRef.current.focus();
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Focus input on any key press (except when already focused or typing)
-      if (document.activeElement !== inputRef.current && inputRef.current && !isTyping) {
+      if (isMountedRef.current && document.activeElement !== inputRef.current && inputRef.current && !isTyping) {
         // Don't interfere with other input elements
         if (!(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
           inputRef.current.focus();
@@ -1163,11 +1198,13 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
   useEffect(() => {
     if (!isTyping && inputRef.current) {
       const timer = setTimeout(() => {
-        if (inputRef.current) {
+        if (isMountedRef.current && inputRef.current) {
           inputRef.current.focus();
         }
       }, 50);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [isTyping, history]);
 
@@ -1177,8 +1214,8 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
       color: 'var(--terminal-green)'
     }}>
       <div className="w-full max-w-6xl h-full md:max-h-[90vh] md:h-auto flex flex-col md:rounded-lg shadow-2xl terminal-container">
-        {/* Terminal Header */}
-        <div className="terminal-header">
+        {/* Terminal Header - Hidden on mobile */}
+        <div className="terminal-header hidden md:flex" suppressHydrationWarning>
           <div className="terminal-buttons">
             <div className="terminal-button close"></div>
             <div className="terminal-button minimize"></div>
@@ -1186,6 +1223,12 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
           </div>
           <div className="terminal-title">Kris German - Portfolio Terminal</div>
           <div className="w-16"></div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="md:hidden bg-[var(--terminal-bg)] border-b border-gray-700 p-3 flex items-center justify-between" suppressHydrationWarning>
+          <div className="text-cyan font-bold text-lg">Kris German</div>
+          <div className="text-xs text-gray-400">Portfolio Terminal</div>
         </div>
 
         {/* Terminal Content */}
@@ -1255,7 +1298,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
                     </div>
 
                   ) : (
-                    <pre className="terminal-ascii whitespace-pre-wrap font-mono leading-relaxed m-0 p-0">
+                    <pre className="terminal-ascii whitespace-pre-wrap font-mono leading-relaxed m-0 p-0 text-sm md:text-xs">
                       {parseTextWithLinks(line.content)}
                     </pre>
                   )
@@ -1272,88 +1315,46 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
           {/* Current Command Line */}
           <div className="terminal-command-line relative flex-shrink-0 bg-[var(--terminal-bg)] border-t border-gray-700 md:border-t-0">
-            <span className="font-bold">{getPrompt()}</span>
+            {/* Desktop prompt */}
+            <span className="font-bold hidden md:inline">{getPrompt()}</span>
 
-            <div className="relative">
+            {/* Mobile layout */}
+            <div className="md:hidden p-3 border-b border-gray-600">
+              <div className="text-xs text-gray-400 mb-2">{currentPath}</div>
+            </div>
+
+            <div className="relative p-3 md:p-0">
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="command-input"
+                className="command-input w-full p-3 md:p-1 text-base md:text-sm bg-transparent border border-gray-600 md:border-none rounded-lg md:rounded-none focus:outline-none focus:border-cyan-500 md:focus:border-transparent"
+                placeholder="Type a command... (try 'help')"
                 spellCheck={false}
                 autoComplete="off"
                 disabled={isTyping}
               />
 
-              <DropdownMenu open={showSuggestions && suggestions.length > 0} onOpenChange={setShowSuggestions} modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <div className="absolute inset-0 pointer-events-none" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="top"
-                  align="start"
-                  className="w-[400px] max-h-48 bg-gray-900 border-gray-600 text-green-300 font-mono text-sm terminal-dropdown"
+              {/* Desktop Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 mt-2 w-[400px] max-h-48 bg-gray-900 border border-gray-600 rounded-md shadow-lg z-50 overflow-y-auto hidden md:block"
                   style={{
                     backgroundColor: 'var(--terminal-bg)',
                     borderColor: 'var(--terminal-green)',
                     color: 'var(--terminal-green)'
                   }}
-                  onCloseAutoFocus={(e) => {
-                    e.preventDefault();
-                    inputRef.current?.focus();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (suggestions.length > 0) {
-                        const indexToUse = selectedSuggestion >= 0 ? selectedSuggestion : 0;
-                        setInput(suggestions[indexToUse].cmd);
-                        setShowSuggestions(false);
-                        setSelectedSuggestion(-1);
-                        inputRef.current?.focus();
-                      }
-                    } else if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSelectedSuggestion(prev =>
-                        prev <= 0 ? suggestions.length - 1 : prev - 1
-                      );
-                    } else if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSelectedSuggestion(prev =>
-                        prev >= suggestions.length - 1 ? 0 : prev + 1
-                      );
-                    } else if (e.key === 'Enter') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (selectedSuggestion >= 0) {
-                        setInput(suggestions[selectedSuggestion].cmd);
-                        setShowSuggestions(false);
-                        setSelectedSuggestion(-1);
-                        inputRef.current?.focus();
-                      }
-                    } else if (e.key === 'Escape') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowSuggestions(false);
-                      setSelectedSuggestion(-1);
-                      inputRef.current?.focus();
-                    }
-                  }}
                 >
                   {suggestions.map((suggestion, index) => (
-                    <DropdownMenuItem
+                    <div
                       key={suggestion.cmd}
-                      className={`px-3 py-2 cursor-pointer font-mono hover:bg-gray-800 focus:bg-gray-700 ${index === selectedSuggestion ? 'bg-gray-700 text-cyan-300' : ''
+                      className={`px-3 py-2 cursor-pointer font-mono hover:bg-gray-800 ${index === selectedSuggestion ? 'bg-gray-700 text-cyan-300' : 'text-green-300'
                         }`}
                       style={{
                         backgroundColor: index === selectedSuggestion ? 'rgba(34, 197, 94, 0.1)' : 'transparent'
                       }}
-                      onSelect={() => {
+                      onClick={() => {
                         setInput(suggestion.cmd);
                         setShowSuggestions(false);
                         setSelectedSuggestion(-1);
@@ -1368,10 +1369,48 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
                           {suggestion.desc}
                         </div>
                       </div>
-                    </DropdownMenuItem>
+                    </div>
                   ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              )}
+
+              {/* Mobile Bottom Sheet Suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-[var(--terminal-bg)] border-t border-gray-600 max-h-64 overflow-y-auto" suppressHydrationWarning>
+                  <div className="p-2">
+                    <div className="text-xs text-gray-400 mb-2 px-2">Suggestions:</div>
+                    <div className="flex flex-col gap-2">
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={suggestion.cmd}
+                          className={`w-full text-left p-3 rounded-lg font-mono transition-colors ${index === selectedSuggestion
+                            ? 'bg-gray-700 text-cyan-300 border border-cyan-500'
+                            : 'bg-gray-800 text-green-300 border border-gray-600 hover:bg-gray-700'
+                            }`}
+                          onClick={() => {
+                            setInput(suggestion.cmd);
+                            setShowSuggestions(false);
+                            setSelectedSuggestion(-1);
+                            inputRef.current?.focus();
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-bold">
+                                <span className="text-cyan-300">$</span> {suggestion.cmd}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {suggestion.desc}
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500">tap</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
