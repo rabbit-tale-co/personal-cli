@@ -304,7 +304,7 @@
       monospace;
 
     /* ❹ add a little air around every ASCII block (optional but nice)             */
-    @apply my-0.5;
+    @apply my-0.25;
   }
 
   /* Typing animation */
