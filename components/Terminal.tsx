@@ -1234,7 +1234,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
         {/* Terminal Content */}
         <div
           ref={terminalRef}
-          className="terminal-content flex-1 overflow-auto"
+          className="terminal-content flex-1 overflow-hidden md:overflow-auto"
           style={{
             minHeight: 0,
             height: '100%'
@@ -1340,9 +1340,9 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
                 <button
                   onClick={() => handleCommand(input)}
                   disabled={isTyping || !input.trim()}
-                  className="md:hidden px-4 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-mono text-sm transition-colors"
+                  className="md:hidden px-3 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-mono text-xs transition-colors flex-shrink-0"
                 >
-                  Send
+                  →
                 </button>
               </div>
 
@@ -1385,7 +1385,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
               {/* Mobile Bottom Sheet Suggestions */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-[var(--terminal-bg)] border-t border-gray-600 max-h-64 overflow-y-auto" suppressHydrationWarning>
+                <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-[var(--terminal-bg)] border-t border-gray-600 h-auto" suppressHydrationWarning>
                   <div className="p-2">
                     <div className="text-xs text-gray-400 mb-2 px-2">Suggestions:</div>
                     <div className="flex flex-col gap-2">
