@@ -1324,18 +1324,27 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
             </div>
 
             <div className="relative p-3 md:p-0">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => handleInputChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="command-input w-full p-3 md:p-1 text-base md:text-sm bg-transparent border border-gray-600 md:border-none rounded-lg md:rounded-none focus:outline-none focus:border-cyan-500 md:focus:border-transparent"
-                placeholder="Type a command... (try 'help')"
-                spellCheck={false}
-                autoComplete="off"
-                disabled={isTyping}
-              />
+              <div className="flex gap-2 md:block">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="command-input flex-1 md:w-full p-3 md:p-1 text-base md:text-sm bg-transparent border border-gray-600 md:border-none rounded-lg md:rounded-none focus:outline-none focus:border-cyan-500 md:focus:border-transparent"
+                  placeholder="Type a command... (try 'help')"
+                  spellCheck={false}
+                  autoComplete="off"
+                  disabled={isTyping}
+                />
+                <button
+                  onClick={() => handleCommand(input)}
+                  disabled={isTyping || !input.trim()}
+                  className="md:hidden px-4 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg font-mono text-sm transition-colors"
+                >
+                  Send
+                </button>
+              </div>
 
               {/* Desktop Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
