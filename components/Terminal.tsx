@@ -1339,7 +1339,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
               {/* Desktop Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 mt-2 w-[400px] max-h-48 bg-gray-900 border border-gray-600 rounded-md shadow-lg z-50 overflow-y-auto hidden md:block"
+                <div className="absolute bottom-full left-0 mb-2 w-[400px] max-h-48 bg-gray-900 border border-gray-600 rounded-md shadow-lg z-50 overflow-y-auto hidden md:block"
                   style={{
                     backgroundColor: 'var(--terminal-bg)',
                     borderColor: 'var(--terminal-green)',
