@@ -1105,11 +1105,25 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    const el = terminalRef.current?.querySelector('.terminal-history');
-    if (el && isTyping) {
+    const el = terminalRef.current;
+    if (el) {
       el.scrollTop = el.scrollHeight;
     }
   }, [history, isTyping]);
+
+  // Mobile keyboard handling
+  useEffect(() => {
+    const handleResize = () => {
+      if (inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Global focus handler
   useEffect(() => {
@@ -1158,11 +1172,11 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
   }, [isTyping, history]);
 
   return (
-    <div className="fixed inset-0 font-mono overflow-hidden flex items-center justify-center" style={{
+    <div className="fixed inset-0 font-mono overflow-hidden flex items-center justify-center md:p-4" style={{
       background: 'linear-gradient(135deg, var(--terminal-bg) 0%, var(--terminal-bg-secondary) 100%)',
       color: 'var(--terminal-green)'
     }}>
-      <div className="w-full max-w-6xl h-full max-h-[90vh] flex flex-col rounded-lg shadow-2xl terminal-container">
+      <div className="w-full max-w-6xl h-full md:max-h-[90vh] md:h-auto flex flex-col md:rounded-lg shadow-2xl terminal-container">
         {/* Terminal Header */}
         <div className="terminal-header">
           <div className="terminal-buttons">
@@ -1177,7 +1191,11 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
         {/* Terminal Content */}
         <div
           ref={terminalRef}
-          className="terminal-content"
+          className="terminal-content flex-1 overflow-auto"
+          style={{
+            minHeight: 0,
+            height: '100%'
+          }}
           onClick={(e) => {
             // Don't focus input if clicking on a link
             if (e.target instanceof HTMLAnchorElement ||
@@ -1253,7 +1271,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
           </div>
 
           {/* Current Command Line */}
-          <div className="terminal-command-line relative">
+          <div className="terminal-command-line relative flex-shrink-0 bg-[var(--terminal-bg)] border-t border-gray-700 md:border-t-0">
             <span className="font-bold">{getPrompt()}</span>
 
             <div className="relative">
