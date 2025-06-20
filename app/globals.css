@@ -288,7 +288,7 @@
 
   .terminal-ascii {
     /* ❶ readable size on desktop, down-scales on very small screens               */
-    @apply text-[15px] md:text-base;   /* 15 px ≈ .94 rem     md ≥ 768px → 1 rem  */
+    @apply text-sm md:text-base;
 
     /* ❷ still no “holes” because line-height == font-size                          */
     line-height: 1em;                  /* equivalent to leading-[15px]/[1em]      */

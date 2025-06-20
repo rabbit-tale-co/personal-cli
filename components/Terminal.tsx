@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -372,7 +372,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     return colorizeText(text);
   };
 
-  const routes = {
+  const routes = useMemo(() => ({
     home: () => [
       `👋 Hey! I'm Kris German, ${calculateAge()} years old UI/UX Designer`,
       '',
@@ -791,7 +791,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
 
     whoami: () => [`${username}@${hostname}`, `Kris German's Interactive Portfolio Terminal`],
     pwd: () => [currentPath, 'Current location in the portfolio']
-  };
+  }), [calculateAge, calculateSkillLevel, generateProgressBar, getFilteredProjects, username, hostname, currentPath]);
 
   // Save command to history (cache)
   const saveToCommandHistory = (command: string) => {
@@ -1089,7 +1089,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
     }
 
     return () => clearTimeout(timeoutId);
-  }, [initialRoute]);
+  }, [initialRoute, routes]);
 
   // Additional focus effect for route changes
   useEffect(() => {
@@ -1190,7 +1190,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
           {/* History */}
           <div className="terminal-history">
             {history.map((line) => (
-              <div key={line.id} className="block">
+              <div key={line.id} className="block mb-1">
                 {line.type === 'command' && (
                   <div className="text-prompt font-bold mb-1">
                     <span className="text-cyan">$</span> <span className="text-yellow">{line.content}</span>
@@ -1237,7 +1237,7 @@ const Terminal = ({ initialRoute }: TerminalProps) => {
                     </div>
 
                   ) : (
-                    <pre className="terminal-ascii">
+                    <pre className="terminal-ascii whitespace-pre-wrap font-mono leading-relaxed m-0 p-0">
                       {parseTextWithLinks(line.content)}
                     </pre>
                   )
